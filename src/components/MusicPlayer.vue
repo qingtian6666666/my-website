@@ -28,12 +28,12 @@
     </div>
 
     <div class="player-controls">
-      <button class="ctrl-btn" @click="prev">⏮</button>
-      <button class="ctrl-btn play-btn" @click="toggle">{{ playing ? '⏸' : '▶' }}</button>
-      <button class="ctrl-btn" @click="next">⏭</button>
+      <button class="ctrl-btn" @click="prev" aria-label="上一首">⏮</button>
+      <button class="ctrl-btn play-btn" @click="toggle" :aria-label="playing ? '暂停' : '播放'">{{ playing ? '⏸' : '▶' }}</button>
+      <button class="ctrl-btn" @click="next" aria-label="下一首">⏭</button>
       <div class="volume-wrap">
-        <button class="ctrl-btn" @click="mute">{{ muted ? '🔇' : '🔊' }}</button>
-        <input type="range" class="volume-slider" min="0" max="1" step="0.05" :value="vol" @input="setVol($event)" />
+        <button class="ctrl-btn" @click="mute" :aria-label="muted ? '取消静音' : '静音'">{{ muted ? '🔇' : '🔊' }}</button>
+        <input type="range" class="volume-slider" min="0" max="1" step="0.05" :value="vol" @input="setVol($event)" aria-label="音量" />
       </div>
     </div>
 
@@ -44,40 +44,40 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 
-var props = defineProps({ tracks: { type: Array, required: true }, trackIndex: { type: Number, default: 0 } })
-var emit = defineEmits(['update:trackIndex'])
+const props = defineProps({ tracks: { type: Array, required: true }, trackIndex: { type: Number, default: 0 } })
+const emit = defineEmits(['update:trackIndex'])
 
-var audio = ref(null)
-var playing = ref(false)
-var cur = ref(0)
-var dur = ref(0)
-var vol = ref(0.7)
-var muted = ref(false)
-var vizH = ref([4,4,4,4,4,4,4,4,4,4,4,4])
-var vizTmr = null
+const audio = ref(null)
+const playing = ref(false)
+const cur = ref(0)
+const dur = ref(0)
+const vol = ref(0.7)
+const muted = ref(false)
+const vizH = ref([4,4,4,4,4,4,4,4,4,4,4,4])
+let vizTmr = null
 
-var currentTrack = computed(function() { return props.tracks[props.trackIndex] || { name: '暂无音乐', category: '', url: '' } })
-var pct = computed(function() { return dur.value > 0 ? (cur.value / dur.value) * 100 : 0 })
+const currentTrack = computed(() => props.tracks[props.trackIndex] || { name: '暂无音乐', category: '', url: '' })
+const pct = computed(() => dur.value > 0 ? (cur.value / dur.value) * 100 : 0)
 
-function startViz() { vizTmr = setInterval(function() { vizH.value = Array.from({length:12}, function() { return 4 + Math.random() * 20 }) }, 150) }
-function stopViz() { if (vizTmr) clearInterval(vizTmr); vizH.value = [4,4,4,4,4,4,4,4,4,4,4,4] }
+const startViz = () => { vizTmr = setInterval(() => { vizH.value = Array.from({length:12}, () => 4 + Math.random() * 20) }, 150) }
+const stopViz = () => { if (vizTmr) clearInterval(vizTmr); vizH.value = [4,4,4,4,4,4,4,4,4,4,4,4] }
 
-function toggle() {
+const toggle = () => {
   if (!audio.value) return
   if (playing.value) { audio.value.pause(); playing.value = false; stopViz() }
-  else { audio.value.play().catch(function(){}); playing.value = true; startViz() }
+  else { audio.value.play().catch((e) => { console.warn('播放失败:', e) }); playing.value = true; startViz() }
 }
-function prev() { var idx = props.trackIndex <= 0 ? props.tracks.length - 1 : props.trackIndex - 1; emit('update:trackIndex', idx); afterSwitch() }
-function next() { var idx = props.trackIndex >= props.tracks.length - 1 ? 0 : props.trackIndex + 1; emit('update:trackIndex', idx); afterSwitch() }
-function afterSwitch() { setTimeout(function() { if (audio.value) { audio.value.play().catch(function(){}); playing.value = true; startViz() } }, 100) }
-function onTime() { if (audio.value) cur.value = audio.value.currentTime }
-function onMeta() { if (audio.value) dur.value = audio.value.duration }
-function seek(e) { if (!audio.value || !dur.value) return; var r = e.currentTarget.getBoundingClientRect(); audio.value.currentTime = ((e.clientX - r.left) / r.width) * dur.value }
-function setVol(e) { vol.value = parseFloat(e.target.value); if (audio.value) audio.value.volume = vol.value; muted.value = vol.value === 0 }
-function mute() { muted.value = !muted.value; if (audio.value) audio.value.muted = muted.value }
-function fmt(s) { if (!s || isNaN(s)) return '0:00'; var m = Math.floor(s / 60), sc = Math.floor(s % 60); return m + ':' + (sc < 10 ? '0' : '') + sc }
+const prev = () => { const idx = props.trackIndex <= 0 ? props.tracks.length - 1 : props.trackIndex - 1; emit('update:trackIndex', idx); afterSwitch() }
+const next = () => { const idx = props.trackIndex >= props.tracks.length - 1 ? 0 : props.trackIndex + 1; emit('update:trackIndex', idx); afterSwitch() }
+const afterSwitch = () => { setTimeout(() => { if (audio.value) { audio.value.play().catch((e) => { console.warn('播放失败:', e) }); playing.value = true; startViz() } }, 100) }
+const onTime = () => { if (audio.value) cur.value = audio.value.currentTime }
+const onMeta = () => { if (audio.value) dur.value = audio.value.duration }
+const seek = (e) => { if (!audio.value || !dur.value) return; const r = e.currentTarget.getBoundingClientRect(); audio.value.currentTime = ((e.clientX - r.left) / r.width) * dur.value }
+const setVol = (e) => { vol.value = parseFloat(e.target.value); if (audio.value) audio.value.volume = vol.value; muted.value = vol.value === 0 }
+const mute = () => { muted.value = !muted.value; if (audio.value) audio.value.muted = muted.value }
+const fmt = (s) => { if (!s || isNaN(s)) return '0:00'; const m = Math.floor(s / 60), sc = Math.floor(s % 60); return m + ':' + (sc < 10 ? '0' : '') + sc }
 
-watch(function() { return props.trackIndex }, function() { cur.value = 0; dur.value = 0 })
+watch(() => props.trackIndex, () => { cur.value = 0; dur.value = 0 })
 </script>
 
 <style scoped>

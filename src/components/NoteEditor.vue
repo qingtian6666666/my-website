@@ -1,22 +1,22 @@
 <template>
   <div class="editor-overlay" @click.self="$emit('close')">
-    <div class="editor-modal glass-card">
+    <div class="editor-modal glass-card" ref="modalRef" role="dialog" aria-modal="true" :aria-label="isEdit ? '编辑心得' : '新增心得'">
       <div class="editor-header">
         <h3>{{ isEdit ? '编辑心得' : '新增心得' }}</h3>
         <button class="editor-close" @click="$emit('close')">✕</button>
       </div>
       <div class="editor-body">
         <div class="form-group">
-          <label>标题</label>
-          <input v-model="form.title" type="text" placeholder="心得标题..." class="form-input" />
+          <label for="note-title">标题</label>
+          <input id="note-title" v-model="form.title" type="text" placeholder="心得标题..." class="form-input" />
         </div>
         <div class="form-group">
-          <label>标签（用逗号分隔）</label>
-          <input v-model="tagsInput" type="text" placeholder="例如：Vue, 心得, 架构" class="form-input" />
+          <label for="note-tags">标签（用逗号分隔）</label>
+          <input id="note-tags" v-model="tagsInput" type="text" placeholder="例如：Vue, 心得, 架构" class="form-input" />
         </div>
         <div class="form-group">
-          <label>内容</label>
-          <textarea v-model="form.content" placeholder="写下你的开发心得..." class="form-textarea" rows="10"></textarea>
+          <label for="note-content">内容</label>
+          <textarea id="note-content" v-model="form.content" placeholder="写下你的开发心得..." class="form-textarea" rows="10"></textarea>
         </div>
       </div>
       <div class="editor-footer">
@@ -31,14 +31,19 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useFocusTrap } from '../composables/useFocusTrap.js'
+import { generateId } from '../utils/id.js'
 
 const props = defineProps({
   note: { type: Object, default: null },
 })
 
 const emit = defineEmits(['save', 'close'])
+const modalRef = ref(null)
 
 const isEdit = computed(() => !!props.note)
+
+useFocusTrap(modalRef, { onEscape: () => emit('close') })
 
 const form = ref({
   title: props.note?.title || '',
@@ -53,7 +58,7 @@ function save() {
     .map(t => t.trim())
     .filter(Boolean)
   emit('save', {
-    id: props.note?.id || Date.now(),
+    id: props.note?.id || generateId(),
     title: form.value.title.trim(),
     content: form.value.content.trim(),
     tags,

@@ -35,7 +35,14 @@
 </template>
 
 <script setup>
-var visions = [
+import { usePageMeta } from '../composables/usePageMeta.js'
+
+usePageMeta({
+  title: '未来展望',
+  description: 'Bob Song 对技术、职业与人生的思考与规划。',
+})
+
+const visions = [
   {
     icon: '🤖', category: '技术目标', title: '深耕 AI 与大模型',
     color: 'linear-gradient(135deg, #667eea, #764ba2)', glow: 'rgba(102,126,234,0.3)',

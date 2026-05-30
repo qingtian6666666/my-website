@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(curl:*)",
+      "Bash(cd \"D:/Download/my-website\" && npm run build 2>&1)",
+      "Bash(bash:*)",
+      "Bash(winget install:*)",
+      "Bash(export:*)",
+      "Bash(\"/c/Users/SongJinze/AppData/Local/Microsoft/WinGet/Packages/jqlang.jq_Microsoft.Winget.Source_8wekyb3d8bbwe/jq.exe\":*)",
+      "Bash(echo:*)",
+      "Bash(grep:*)",
+      "Bash(cd D:/Download/my-website && npm install -D eslint @eslint/js eslint-plugin-vue prettier eslint-config-prettier 2>&1)",
+      "Bash(cd D:/Download/my-website && npm install -D vite-plugin-compression terser 2>&1)",
+      "Bash(cd /d/Download/my-website && npm run build 2>&1)",
+      "Bash(cd /d/Download/my-website && npm install dompurify 2>&1)"
+    ]
+  }
+}

@@ -95,6 +95,19 @@ server {
     root /var/www/my-website;
     index index.html;
 
+    # 安全响应头
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+
+    # 禁止访问隐藏文件
+    location ~ /\. {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+
     # Vue Router - 所有路径回退到 index.html
     location / {
         try_files $uri $uri/ /index.html;
@@ -133,4 +146,9 @@ echo "   访问地址: http://$(echo $REMOTE | cut -d@ -f2):6666"
 echo ""
 echo "   后续更新只需再次运行:"
 echo "   bash deploy.sh $REMOTE"
+echo ""
+echo "   💡 安全建议："
+echo "   - 生产环境建议配置 HTTPS (Let's Encrypt)"
+echo "   - 修改监听端口为 443 并添加 SSL 证书"
+echo "   - 将 HTTP 80 端口重定向到 HTTPS"
 echo "============================================"

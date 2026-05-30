@@ -10,13 +10,13 @@
     </div>
 
     <div class="music-cats scroll-reveal" style="transition-delay:0.1s">
-      <button class="cat-btn" :class="{ active: cat === c }" v-for="c in cats" :key="c" @click="switchCat(c)">
+      <button class="cat-btn" :class="{ active: cat === c }" v-for="c in cats" :key="c" @click="switchCat(c)" :aria-pressed="cat === c">
         {{ icons[c] }} {{ c }}
       </button>
     </div>
 
     <div class="track-list">
-      <div class="track-item glass-card scroll-reveal" v-for="(t, i) in filtered" :key="t.name" :class="{ active: i === idx }" :style="{ transitionDelay: (i * 0.06) + 's' }" @click="idx = i">
+      <div class="track-item glass-card scroll-reveal" v-for="(t, i) in filtered" :key="t.name" :class="{ active: i === idx }" :style="{ transitionDelay: (i * 0.06) + 's' }" @click="idx = i" @keydown.enter="idx = i" @keydown.space.prevent="idx = i" tabindex="0" role="option" :aria-selected="i === idx">
         <div class="track-idx">
           <span v-if="i !== idx">{{ pad(i + 1) }}</span>
           <span v-else class="eq-wrap"><span class="eq"></span><span class="eq"></span><span class="eq"></span></span>
@@ -39,12 +39,18 @@
 <script setup>
 import { ref, computed } from 'vue'
 import MusicPlayer from '../components/MusicPlayer.vue'
+import { usePageMeta } from '../composables/usePageMeta.js'
 
-var cat = ref('全部')
-var idx = ref(0)
-var cats = ['全部', '轻音乐', '自然白噪音', '助眠音乐']
-var icons = { '全部': '🎶', '轻音乐': '🎹', '自然白噪音': '🌊', '助眠音乐': '🌙' }
-var all = [
+usePageMeta({
+  title: '音乐空间',
+  description: '放松心灵，沉浸在轻音乐与自然之声中。',
+})
+
+const cat = ref('全部')
+const idx = ref(0)
+const cats = ['全部', '轻音乐', '自然白噪音', '助眠音乐']
+const icons = { '全部': '🎶', '轻音乐': '🎹', '自然白噪音': '🌊', '助眠音乐': '🌙' }
+const all = [
   { name: '宁静钢琴曲', category: '轻音乐', duration: '3:20', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' },
   { name: '林间漫步', category: '轻音乐', duration: '4:15', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3' },
   { name: '晨光序曲', category: '轻音乐', duration: '3:45', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3' },
@@ -55,9 +61,9 @@ var all = [
   { name: '月光摇篮曲', category: '助眠音乐', duration: '4:50', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3' },
   { name: '深海安眠', category: '助眠音乐', duration: '5:30', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3' },
 ]
-var filtered = computed(function() { return cat.value === '全部' ? all : all.filter(function(t) { return t.category === cat.value }) })
-function switchCat(c) { cat.value = c; idx.value = 0 }
-function pad(n) { return n < 10 ? '0' + n : '' + n }
+const filtered = computed(() => cat.value === '全部' ? all : all.filter((t) => t.category === cat.value))
+const switchCat = (c) => { cat.value = c; idx.value = 0 }
+const pad = (n) => n < 10 ? '0' + n : '' + n
 </script>
 
 <style scoped>

@@ -7,7 +7,7 @@
 
     <div class="profile-section scroll-reveal-scale">
       <div class="profile-card glass-card">
-        <div class="profile-avatar"><img src="../assets/avatar.jpg" alt="avatar" /></div>
+        <div class="profile-avatar"><img src="../assets/avatar.jpg" alt="Bob Song 的个人头像" /></div>
         <div class="profile-info">
           <h2>Bob Song</h2>
           <p class="role">全栈开发工程师</p>
@@ -37,7 +37,7 @@
               <span class="tech-name">{{ t.name }}</span>
               <span class="tech-pct">{{ levels[i] }}%</span>
             </div>
-            <div class="progress-bar">
+            <div class="progress-bar" role="progressbar" :aria-valuenow="levels[i]" aria-valuemin="0" aria-valuemax="100" :aria-label="t.name + ' 熟练度'">
               <div class="progress-fill" :style="{ width: levels[i] + '%', background: t.color }"></div>
               <div class="progress-glow" :style="{ width: levels[i] + '%', background: t.color }"></div>
             </div>
@@ -66,10 +66,17 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useCountUp } from '../composables/useCountUp.js'
+import { usePageMeta } from '../composables/usePageMeta.js'
 
-var tags = ['全栈开发', 'AI 爱好者', '开源贡献者', '持续学习者', '极简主义']
+usePageMeta({
+  title: '关于我',
+  description: '了解 Bob Song 的技术世界与成长经历 - 全栈开发工程师，AI 爱好者。',
+})
 
-var tech = [
+const tags = ['全栈开发', 'AI 爱好者', '开源贡献者', '持续学习者', '极简主义']
+
+const tech = [
   { name: 'JavaScript / TypeScript', icon: '🟨', level: 90, color: 'linear-gradient(90deg, #f7df1e, #3178c6)' },
   { name: 'Vue.js', icon: '💚', level: 88, color: 'linear-gradient(90deg, #42b883, #35495e)' },
   { name: 'React', icon: '⚛️', level: 80, color: 'linear-gradient(90deg, #61dafb, #0e7fb7)' },
@@ -80,39 +87,39 @@ var tech = [
   { name: '数据库', icon: '🗄️', level: 75, color: 'linear-gradient(90deg, #4479a1, #47a248)' },
 ]
 
-var levels = ref(tech.map(function() { return 0 }))
-var done = false
-var obs = null
+// 使用 useCountUp composable 管理动画
+const countUps = tech.map((t) => useCountUp(t.level, { duration: 1500 }))
+const levels = ref(tech.map(() => 0))
+let done = false
+let obs = null
 
-var timeline = [
+const timeline = [
   { date: '2024', title: '深入 AI 领域', desc: '开始探索大语言模型与 AI 应用开发，参与多个 AI 项目。', color: '#f093fb' },
   { date: '2023', title: '全栈开发实践', desc: '独立完成多个全栈项目，掌握前后端一体化开发能力。', color: '#667eea' },
   { date: '2022', title: '前端框架精进', desc: '深入学习 Vue 和 React 生态，参与开源社区。', color: '#5ee7df' },
   { date: '2021', title: '编程之旅起航', desc: '第一次接触编程，从 HTML/CSS 开始，打开了新世界的大门。', color: '#764ba2' },
 ]
 
-function animateLevels() {
+const animateLevels = () => {
   if (done) return
   done = true
-  tech.forEach(function(t, i) {
-    var target = t.level, t0 = performance.now()
-    ;(function step(now) {
-      var p = Math.min((now - t0) / 1500, 1)
-      levels.value[i] = Math.round((1 - Math.pow(1 - p, 3)) * target)
-      if (p < 1) requestAnimationFrame(step)
-    })(t0)
+  countUps.forEach((cu, i) => {
+    cu.start()
+    // 同步值到 levels 数组以保持模板绑定
+    const syncId = setInterval(() => { levels.value[i] = cu.value.value }, 30)
+    setTimeout(() => { clearInterval(syncId); levels.value[i] = tech[i].level }, 2000)
   })
 }
 
-onMounted(function() {
-  obs = new IntersectionObserver(function(entries) {
-    entries.forEach(function(e) { if (e.isIntersecting) animateLevels() })
+onMounted(() => {
+  obs = new IntersectionObserver((entries) => {
+    entries.forEach((e) => { if (e.isIntersecting) animateLevels() })
   }, { threshold: 0.2 })
-  var el = document.querySelector('.tech-section')
+  const el = document.querySelector('.tech-section')
   if (el) obs.observe(el)
 })
 
-onUnmounted(function() { if (obs) obs.disconnect() })
+onUnmounted(() => { if (obs) obs.disconnect() })
 </script>
 
 <style scoped>

@@ -7,16 +7,24 @@
       </div>
     </transition>
 
+    <div class="cursor-glow" :style="cursorStyle" aria-hidden="true"></div>
+
+    <a class="skip-link" href="#main-content">跳过导航</a>
+
     <ParticlesBg />
     <NavBar />
 
-    <router-view v-slot="slotProps">
-      <transition name="page" mode="out-in">
-        <component :is="slotProps.Component" />
-      </transition>
-    </router-view>
+    <main id="main-content">
+      <router-view v-slot="slotProps">
+        <transition name="page" mode="out-in">
+          <component :is="slotProps.Component" />
+        </transition>
+      </router-view>
+    </main>
 
-    <button v-show="showTop" class="back-to-top" @click="toTop">&#8593;</button>
+    <AudioPlayer />
+
+    <button v-show="showTop" class="back-to-top" @click="toTop" aria-label="返回顶部">&#8593;</button>
 
     <footer class="app-footer">
       <div class="footer-glow"></div>
@@ -41,43 +49,63 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
-import ParticlesBg from './components/ParticlesBg.vue'
+import { ref, computed, onMounted, onUnmounted, defineAsyncComponent } from 'vue'
 import NavBar from './components/NavBar.vue'
+import ParticlesBg from './components/ParticlesBg.vue'
+const AudioPlayer = defineAsyncComponent(() => import('./components/AudioPlayer.vue'))
+import { useMousePosition } from './composables/useMousePosition.js'
+import { useTheme } from './composables/useTheme.js'
+
+// 主题初始化
+useTheme()
+
+// 鼠标跟随光效
+const { x: mouseX, y: mouseY } = useMousePosition()
+const cursorStyle = computed(() => ({
+  left: mouseX.value + 'px',
+  top: mouseY.value + 'px',
+}))
 
 const showSplash = ref(true)
 const showTop = ref(false)
 let obs = null
+let mo = null
 
-function onScroll() { showTop.value = window.scrollY > 400 }
-function toTop() { window.scrollTo({ top: 0, behavior: 'smooth' }) }
+const onScroll = () => { showTop.value = window.scrollY > 400 }
+const toTop = () => { window.scrollTo({ top: 0, behavior: 'smooth' }) }
 
-onMounted(function() {
+onMounted(() => {
   window.addEventListener('scroll', onScroll, { passive: true })
 
-  setTimeout(function() { showSplash.value = false }, 1400)
+  setTimeout(() => { showSplash.value = false }, 600)
 
-  setTimeout(function() {
+  setTimeout(() => {
     try {
-      obs = new IntersectionObserver(function(entries) {
-        entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add('revealed') })
+      obs = new IntersectionObserver((entries) => {
+        entries.forEach((e) => { if (e.isIntersecting) e.target.classList.add('revealed') })
       }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' })
-      var sels = '.scroll-reveal,.scroll-reveal-scale'
-      document.querySelectorAll(sels).forEach(function(el) { obs.observe(el) })
+      const sels = '.scroll-reveal,.scroll-reveal-scale'
+      document.querySelectorAll(sels).forEach((el) => { obs.observe(el) })
 
-      var mo = new MutationObserver(function() {
-        document.querySelectorAll(sels).forEach(function(el) {
-          if (!el.dataset.seen) { el.dataset.seen = '1'; obs.observe(el) }
-        })
+      // MutationObserver 回调添加防抖
+      let moTimer = null
+      mo = new MutationObserver(() => {
+        if (moTimer) clearTimeout(moTimer)
+        moTimer = setTimeout(() => {
+          document.querySelectorAll(sels).forEach((el) => {
+            if (!el.dataset.seen) { el.dataset.seen = '1'; obs.observe(el) }
+          })
+        }, 100)
       })
       mo.observe(document.getElementById('app-root'), { childList: true, subtree: true })
-    } catch (e) { /* ok */ }
+    } catch (e) { console.warn('滚动动画初始化失败:', e) }
   }, 300)
 })
 
-onUnmounted(function() {
+onUnmounted(() => {
   window.removeEventListener('scroll', onScroll)
   if (obs) obs.disconnect()
+  if (mo) mo.disconnect()
 })
 </script>
 
@@ -94,7 +122,7 @@ onUnmounted(function() {
 .splash-screen {
   position: fixed;
   inset: 0;
-  background: #0a0a1a;
+  background: #050510;
   z-index: 100000;
   display: flex;
   flex-direction: column;
@@ -106,15 +134,17 @@ onUnmounted(function() {
 .splash-logo {
   font-size: 2.5rem;
   font-weight: 800;
-  background: linear-gradient(135deg, #667eea, #f093fb);
+  font-family: 'JetBrains Mono', 'Noto Sans SC', sans-serif;
+  background: linear-gradient(135deg, #a855f7, #06b6d4);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   margin-bottom: 32px;
   animation: sp 1.5s ease-in-out infinite;
+  letter-spacing: 4px;
 }
-.splash-bar-wrap { width: 200px; height: 3px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; }
-.splash-bar { height: 100%; width: 0; background: linear-gradient(90deg, #667eea, #f093fb); border-radius: 2px; animation: spLoad 1.2s ease forwards; }
+.splash-bar-wrap { width: 200px; height: 2px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; }
+.splash-bar { height: 100%; width: 0; background: linear-gradient(90deg, #a855f7, #06b6d4); border-radius: 2px; animation: spLoad 1.2s ease forwards; }
 @keyframes sp { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.7;transform:scale(1.03)} }
 @keyframes spLoad { 0%{width:0} 50%{width:70%} 100%{width:100%} }
 
@@ -131,16 +161,16 @@ onUnmounted(function() {
 }
 
 /* Footer */
-.app-footer { position: relative; text-align: center; padding: 40px 24px 28px; color: #6a6a99; font-size: 0.85rem; margin-top: auto; overflow: hidden; }
-.footer-glow { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 400px; height: 1px; background: linear-gradient(90deg, transparent, #667eea, #f093fb, #667eea, transparent); opacity: 0.6; }
+.app-footer { position: relative; text-align: center; padding: 40px 24px 28px; color: var(--text-muted); font-size: 0.8rem; margin-top: auto; overflow: hidden; font-family: var(--font-mono); }
+.footer-glow { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 400px; height: 1px; background: linear-gradient(90deg, transparent, #a855f7, #06b6d4, #a855f7, transparent); opacity: 0.5; }
 .footer-content { display: flex; align-items: center; justify-content: space-between; max-width: 600px; margin: 0 auto 20px; }
 .footer-brand { display: flex; align-items: center; gap: 10px; }
-.footer-logo { font-size: 1.3rem; background: linear-gradient(135deg, #667eea, #f093fb); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-.footer-name { font-weight: 600; color: #a0a0cc; font-size: 0.95rem; }
+.footer-logo { font-size: 1.3rem; background: linear-gradient(135deg, #a855f7, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.footer-name { font-weight: 600; color: var(--text-secondary); font-size: 0.9rem; letter-spacing: 1px; }
 .footer-links { display: flex; gap: 12px; }
-.footer-social { width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #a0a0cc; transition: all 0.3s ease; text-decoration: none; }
-.footer-social:hover { background: rgba(102,126,234,0.15); border-color: #667eea; color: #667eea; transform: translateY(-2px); box-shadow: 0 4px 15px rgba(102,126,234,0.2); }
-.footer-divider { width: 60px; height: 1px; background: rgba(255,255,255,0.1); margin: 0 auto 16px; }
-.footer-copy { font-size: 0.8rem; color: #6a6a99; }
+.footer-social { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: var(--radius); background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); color: var(--text-secondary); transition: all 0.3s ease; text-decoration: none; }
+.footer-social:hover { background: rgba(168,85,247,0.1); border-color: rgba(168,85,247,0.4); color: #a855f7; transform: translateY(-2px); box-shadow: 0 0 15px rgba(168,85,247,0.2); }
+.footer-divider { width: 60px; height: 1px; background: var(--glass-border); margin: 0 auto 16px; }
+.footer-copy { font-size: 0.75rem; color: var(--text-muted); letter-spacing: 2px; }
 @media (max-width: 640px) { .footer-content { flex-direction: column; gap: 16px; } }
 </style>
